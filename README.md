@@ -6,6 +6,8 @@ Most tool-calling benchmarks give models obviously distinct options. ToolArena d
 
 The benchmark demo covers six model variants (two base, two fine-tuned, two distilled) on a 28-tool Business Intelligence domain, with both objective metrics and subjective metrics.
 
+![System Architecture](assets/images/toolarena.png)
+
 ## Motivation
 
 Real tool-calling deployments are messy — tools in the same system often have overlapping purposes and similar names (e.g. `aggregate_metric` vs. `compute_rolling_average` vs. `compute_cumulative_sum`). Standard benchmarks don't test for this.
