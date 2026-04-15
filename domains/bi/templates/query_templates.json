@@ -1,0 +1,781 @@
+{
+  "domain": "bi",
+  "version": "1.0.0",
+  "description": "Query templates for the BI domain confusion-attack dataset. Templates use named Python str.format() style slots. Difficulty 1=easy (explicit signal words), 2=medium (moderate ambiguity), 3=hard (high ambiguity, multiple tools plausible).",
+  "vocabulary": {
+    "metrics": [
+      "revenue", "sales", "profit", "costs", "conversions", "sessions",
+      "orders", "churn rate", "customer lifetime value", "average order value",
+      "page views", "bounce rate", "click-through rate", "retention rate",
+      "monthly active users", "daily active users", "gross margin",
+      "support tickets", "inventory levels", "net promoter score"
+    ],
+    "dimensions": [
+      "region", "product category", "channel", "customer segment",
+      "sales rep", "country", "department", "campaign", "device type",
+      "subscription tier"
+    ],
+    "dimension_values": [
+      "North", "South", "East", "West", "EMEA", "APAC", "North America",
+      "Enterprise", "SMB", "Mid-Market", "Free", "Pro", "Premium",
+      "Email", "Paid Search", "Organic", "Social", "Direct",
+      "Mobile", "Desktop", "Tablet",
+      "Sales", "Marketing", "Engineering", "Support", "Finance"
+    ],
+    "time_periods": [
+      "last 7 days", "last 30 days", "last 90 days", "last quarter",
+      "Q1", "Q2", "Q3", "Q4", "this month", "last month",
+      "this year", "last year", "year to date", "the past week",
+      "the past two weeks"
+    ],
+    "entities": [
+      "sales reps", "products", "customers", "campaigns", "regions",
+      "channels", "departments", "accounts", "store locations", "agents"
+    ],
+    "entity_singular": [
+      "sales rep", "product", "customer", "campaign", "region",
+      "channel", "department", "account", "store location", "agent"
+    ],
+    "window_sizes": [7, 14, 21, 30, 60, 90],
+    "n_values": [3, 5, 10, 15, 20],
+    "dataset_names": [
+      "sales_data", "marketing_data", "product_data", "customer_data",
+      "operations_data", "finance_data", "events_data", "web_analytics_data"
+    ],
+    "column_names": [
+      "revenue", "profit", "cost", "quantity", "discount",
+      "conversion_rate", "session_duration", "order_value",
+      "ad_spend", "support_volume", "refund_rate"
+    ],
+    "target_names": [
+      "quarterly target", "annual goal", "monthly quota",
+      "KPI target", "sales quota", "budget target", "forecast target"
+    ],
+    "forecast_horizons": [1, 2, 3, 4, 6, 12],
+    "forecast_horizon_units": ["weeks", "months", "quarters"]
+  },
+  "tool_templates": {
+    "aggregate_metric": {
+      "1": [
+        "What is the total {metric}?",
+        "Give me the overall sum of {metric} for {time_period}.",
+        "What is the average {metric} across all records?",
+        "Calculate the total {metric} for {time_period}.",
+        "What is the overall {metric} number for {time_period}?",
+        "What was the mean {metric} across the entire dataset?"
+      ],
+      "2": [
+        "How much {metric} did we generate in {time_period}?",
+        "What does {metric} look like overall for {time_period}?",
+        "Pull the {metric} figure for {time_period}.",
+        "Summarize our {metric} for {time_period}.",
+        "What was our total {metric} last {time_period}?",
+        "Give me a single {metric} number for {time_period}."
+      ],
+      "3": [
+        "Show me {metric} for {time_period}.",
+        "What are our {metric} numbers for {time_period}?",
+        "Give me a {metric} summary for {time_period}.",
+        "What is our {metric} situation for {time_period}?",
+        "How did {metric} do in {time_period}?",
+        "What does {metric} look like for {time_period}?"
+      ]
+    },
+    "compute_rolling_average": {
+      "1": [
+        "What is the {window_size}-day rolling average of {metric}?",
+        "Show me the moving average of {metric} over {window_size} days.",
+        "Calculate a {window_size}-day sliding window average for {metric}.",
+        "What is the rolling {window_size}-day mean of {metric}?",
+        "Give me the {window_size}-day moving average for {metric}.",
+        "Compute a {window_size}-day rolling mean on {metric}."
+      ],
+      "2": [
+        "Smooth out the {metric} data over a {window_size}-day window.",
+        "Show me {metric} on a rolling {window_size}-day basis.",
+        "What does {metric} look like when smoothed over {window_size} days?",
+        "Track {metric} with a {window_size}-day moving window.",
+        "How is {metric} trending on a {window_size}-day rolling basis?",
+        "Show me a smoothed view of {metric} using a {window_size}-day window."
+      ],
+      "3": [
+        "Show me {metric} trends over the past {window_size} days.",
+        "How is {metric} performing on a daily basis?",
+        "Track {metric} movement over the last {window_size} days.",
+        "Show me how {metric} changes day to day.",
+        "What does {metric} look like over the past {window_size} days?",
+        "How has {metric} been behaving recently?"
+      ]
+    },
+    "compute_cumulative_sum": {
+      "1": [
+        "What is the running total of {metric}?",
+        "Show me the cumulative {metric} to date.",
+        "Calculate the year-to-date cumulative {metric}.",
+        "What is the cumulative sum of {metric}?",
+        "Show me {metric} as a running total.",
+        "Give me the cumulative {metric} since the start of {time_period}."
+      ],
+      "2": [
+        "How much {metric} have we accumulated this {time_period}?",
+        "Track the build-up of {metric} over {time_period}.",
+        "Show me {metric} accumulation from the start of {time_period}.",
+        "How is our total {metric} growing over {time_period}?",
+        "What is the total {metric} we have built up this {time_period}?",
+        "Show me how {metric} accumulates over {time_period}."
+      ],
+      "3": [
+        "Show me {metric} progress over {time_period}.",
+        "How is {metric} building up over {time_period}?",
+        "Track {metric} over {time_period}.",
+        "Show me {metric} growth over {time_period}.",
+        "What does total {metric} look like over {time_period}?",
+        "How is {metric} adding up over {time_period}?"
+      ]
+    },
+    "filter_records": {
+      "1": [
+        "Show me only the records where {dimension} is {dimension_value}.",
+        "Filter the data to {dimension} equals {dimension_value}.",
+        "Give me rows where {dimension} = {dimension_value}.",
+        "Return records where {dimension} is {dimension_value}.",
+        "Restrict the dataset to only {dimension_value} in the {dimension} column.",
+        "I only want records with {dimension} set to {dimension_value}."
+      ],
+      "2": [
+        "I only want to see {dimension_value} {dimension} data.",
+        "Pull the data for {dimension_value} only.",
+        "Show me the {dimension_value} records in {dimension}.",
+        "Restrict the data to {dimension_value} {dimension}.",
+        "What does the data look like when filtered to {dimension_value}?",
+        "Give me just the {dimension_value} entries."
+      ],
+      "3": [
+        "Show me {metric} for {dimension_value}.",
+        "What is our {metric} in {dimension_value}?",
+        "Give me the {dimension_value} numbers.",
+        "Show me data for the {dimension_value} {dimension}.",
+        "Pull {metric} data for {dimension_value}.",
+        "What happened with {metric} in {dimension_value}?"
+      ]
+    },
+    "segment_by_dimension": {
+      "1": [
+        "Break down {metric} by {dimension}.",
+        "Show me {metric} grouped by {dimension}.",
+        "Give me a breakdown of {metric} across each {dimension}.",
+        "Segment {metric} by {dimension}.",
+        "Group {metric} by {dimension} and show totals.",
+        "Aggregate {metric} by each {dimension} value."
+      ],
+      "2": [
+        "How does {metric} vary across different {dimension}s?",
+        "Compare {metric} for each {dimension}.",
+        "Show me {metric} across all {dimension}s.",
+        "What is {metric} for each {dimension}?",
+        "Analyze {metric} broken down by {dimension}.",
+        "Show me a {dimension}-level view of {metric}."
+      ],
+      "3": [
+        "Show me {metric} for each {dimension}.",
+        "How is {metric} distributed across {dimension}?",
+        "What does {metric} look like by {dimension}?",
+        "Show me {metric} across {dimension}s.",
+        "Break down our {metric} performance by {dimension}.",
+        "What is the {dimension} breakdown for {metric}?"
+      ]
+    },
+    "apply_cohort_filter": {
+      "1": [
+        "Show me users who signed up in {time_period} and made a purchase within 30 days.",
+        "Filter to the cohort of customers who churned in {time_period}.",
+        "Get the cohort of users who completed onboarding in {time_period}.",
+        "Show me customers acquired in {time_period} who are still active.",
+        "Filter to the cohort of accounts that upgraded in {time_period}.",
+        "Isolate the cohort of users who first converted in {time_period}."
+      ],
+      "2": [
+        "Show me customers from the {time_period} acquisition cohort.",
+        "Analyze behavior of users who joined in {time_period}.",
+        "What does the {time_period} cohort look like?",
+        "Pull data for users in the {time_period} signup cohort.",
+        "Show me the {time_period} customer cohort performance.",
+        "How did the {time_period} cohort behave over time?"
+      ],
+      "3": [
+        "Show me customers from {time_period}.",
+        "What happened with users from {time_period}?",
+        "Give me data for the {time_period} group.",
+        "Show me users who joined in {time_period}.",
+        "How did our {time_period} customers perform?",
+        "What does the data show for {time_period} customers?"
+      ]
+    },
+    "compute_trend_line": {
+      "1": [
+        "Fit a linear trend line to {metric} over the past {time_period}.",
+        "What is the historical trend direction of {metric}?",
+        "Compute the linear trend for {metric} over {time_period}.",
+        "What is the historical rate of change of {metric}?",
+        "Show me the trend line fitted to {metric} data.",
+        "Calculate the slope of the {metric} trend over {time_period}."
+      ],
+      "2": [
+        "Is {metric} trending up or down based on historical data?",
+        "What direction is {metric} heading based on past performance?",
+        "Show me how {metric} has been moving historically.",
+        "What is the historical growth trajectory of {metric}?",
+        "Has {metric} been increasing or decreasing over {time_period}?",
+        "What does the historical trend tell us about {metric}?"
+      ],
+      "3": [
+        "How is {metric} doing over time?",
+        "What does {metric} look like historically?",
+        "Show me the direction of {metric} over {time_period}.",
+        "How has {metric} been performing over time?",
+        "What is happening with {metric} over {time_period}?",
+        "Is {metric} going up or down?"
+      ]
+    },
+    "generate_forecast": {
+      "1": [
+        "Forecast {metric} for the next {forecast_horizon} {forecast_horizon_unit}.",
+        "Predict {metric} for the next quarter.",
+        "Generate a {forecast_horizon}-{forecast_horizon_unit} forecast for {metric}.",
+        "What will {metric} be next {forecast_horizon_unit}?",
+        "Project {metric} for the next {forecast_horizon} {forecast_horizon_unit}.",
+        "Give me a {forecast_horizon}-{forecast_horizon_unit} prediction for {metric}."
+      ],
+      "2": [
+        "What do you expect {metric} to be next quarter?",
+        "Where is {metric} headed over the next {forecast_horizon} {forecast_horizon_unit}?",
+        "Give me a future projection for {metric}.",
+        "How will {metric} look next {forecast_horizon_unit}?",
+        "What should we expect for {metric} going forward?",
+        "Can you predict how {metric} will behave next {forecast_horizon_unit}?"
+      ],
+      "3": [
+        "How will {metric} trend next {forecast_horizon_unit}?",
+        "What will {metric} look like next quarter?",
+        "Show me expected {metric} for next {forecast_horizon_unit}.",
+        "Where is {metric} going?",
+        "What does the future look like for {metric}?",
+        "What can we expect from {metric} next {forecast_horizon_unit}?"
+      ]
+    },
+    "detect_seasonality": {
+      "1": [
+        "Is there a seasonal pattern in {metric}?",
+        "Detect seasonality in {metric} data.",
+        "Does {metric} show weekly or monthly cycles?",
+        "Are there recurring cyclical patterns in {metric}?",
+        "Check if {metric} has seasonal behavior.",
+        "Does {metric} follow a seasonal cycle?"
+      ],
+      "2": [
+        "Does {metric} tend to spike at certain times of year?",
+        "Are there cyclical patterns in how {metric} behaves?",
+        "Does {metric} follow a seasonal trend throughout the year?",
+        "Is {metric} affected by time-of-year seasonality?",
+        "Do we see recurring highs and lows in {metric}?",
+        "Are there repeating patterns in {metric} across seasons?"
+      ],
+      "3": [
+        "How does {metric} change over the course of a year?",
+        "Are there patterns in {metric} data?",
+        "Why does {metric} fluctuate the way it does?",
+        "Show me how {metric} behaves throughout the year.",
+        "Does {metric} follow a predictable pattern?",
+        "Is there something driving {metric} up and down regularly?"
+      ]
+    },
+    "rank_entities": {
+      "1": [
+        "Rank all {entities} by {metric}.",
+        "Give me a full ranked list of {entities} by {metric}.",
+        "Assign ordinal ranks to all {entities} based on {metric}.",
+        "Create a complete leaderboard of all {entities} by {metric}.",
+        "Rank every {entity_singular} in the dataset by {metric}.",
+        "Show me all {entities} ranked from best to worst by {metric}."
+      ],
+      "2": [
+        "Show me all {entities} ordered by {metric}.",
+        "Who are the best and worst performing {entities} by {metric}?",
+        "Give me a complete ordering of {entities} by {metric}.",
+        "Order all {entities} from highest to lowest {metric}.",
+        "How do all {entities} stack up by {metric}?",
+        "Show me the full {entities} leaderboard by {metric}."
+      ],
+      "3": [
+        "Who are the top performing {entities}?",
+        "Show me {entities} performance by {metric}.",
+        "How do {entities} compare by {metric}?",
+        "Show me the {entities} ranking by {metric}.",
+        "Who is leading in {metric}?",
+        "How do our {entities} compare on {metric}?"
+      ]
+    },
+    "get_top_n_records": {
+      "1": [
+        "Show me the top {n} {entities} by {metric}.",
+        "Give me the bottom {n} records by {metric}.",
+        "Return the top {n} rows sorted by {metric}.",
+        "What are the top {n} {entities} for {metric}?",
+        "Show me the {n} highest {metric} records.",
+        "Give me the {n} best {entities} based on {metric}."
+      ],
+      "2": [
+        "Who are the top {n} {entities}?",
+        "Show me the best {n} {entities} by {metric}.",
+        "Which {n} {entities} have the highest {metric}?",
+        "Give me the {n} worst performing {entities} by {metric}.",
+        "What are our top {n} {entities} by {metric}?",
+        "Which {n} {entities} are performing best on {metric}?"
+      ],
+      "3": [
+        "Who are the best {entities}?",
+        "Show me the strongest {entities} by {metric}.",
+        "Which {entities} are performing best on {metric}?",
+        "Who leads in {metric}?",
+        "Show me the best performers on {metric}.",
+        "Which {entities} should I focus on for {metric}?"
+      ]
+    },
+    "compute_percentile_rank": {
+      "1": [
+        "What percentile is each {entity_singular} in for {metric}?",
+        "Compute the percentile rank of all {entities} by {metric}.",
+        "What percent of {entities} does each {entity_singular} outperform in {metric}?",
+        "Show me the percentile distribution of {entities} by {metric}.",
+        "Calculate percentile ranks for all {entities} based on {metric}.",
+        "Show me where each {entity_singular} falls in the {metric} percentile distribution."
+      ],
+      "2": [
+        "Where does each {entity_singular} fall in the distribution of {metric}?",
+        "What is the relative percentile standing of each {entity_singular} by {metric}?",
+        "How does each {entity_singular} compare to peers in terms of {metric}?",
+        "Show me where {entities} sit in the {metric} distribution.",
+        "What fraction of {entities} does each {entity_singular} beat in {metric}?",
+        "Rank {entities} by where they sit in the {metric} distribution."
+      ],
+      "3": [
+        "How do {entities} compare in {metric}?",
+        "Where do {entities} stand on {metric}?",
+        "Show me how {entities} rank in {metric}.",
+        "How do individual {entities} compare for {metric}?",
+        "Which {entities} are in the top bracket for {metric}?",
+        "How does each {entity_singular} compare to the average {metric}?"
+      ]
+    },
+    "compare_periods": {
+      "1": [
+        "Compare {metric} between {time_period} and the previous period.",
+        "How did {metric} change from last quarter to this quarter?",
+        "Show me {metric} for this month vs last month.",
+        "What is the year-over-year change in {metric}?",
+        "Compare {metric} between two consecutive quarters.",
+        "Show me the period-over-period change in {metric}."
+      ],
+      "2": [
+        "How did {metric} do this {time_period} vs last {time_period}?",
+        "Is {metric} better this period than last period?",
+        "Show me the change in {metric} between periods.",
+        "How has {metric} changed over the past two periods?",
+        "What is the {metric} difference between this and last period?",
+        "How does this period's {metric} compare to the prior period?"
+      ],
+      "3": [
+        "How did {metric} do compared to before?",
+        "Is {metric} improving over time?",
+        "How is {metric} now vs earlier?",
+        "Show me {metric} compared to the previous period.",
+        "How has {metric} changed recently?",
+        "Is {metric} better or worse than it was?"
+      ]
+    },
+    "benchmark_against_target": {
+      "1": [
+        "Are we hitting our {target_name} for {metric}?",
+        "How does actual {metric} compare to our {target_name}?",
+        "What is our {metric} attainment vs the {target_name}?",
+        "Show me {metric} versus our set {target_name}.",
+        "Are we on track to hit our {metric} {target_name}?",
+        "How far are we from the {metric} {target_name}?"
+      ],
+      "2": [
+        "How far are we from our {metric} {target_name}?",
+        "Are we meeting our {metric} goals?",
+        "How close are we to the {metric} {target_name}?",
+        "Is {metric} on target?",
+        "Are we achieving our {metric} objectives?",
+        "What is our gap to {metric} {target_name}?"
+      ],
+      "3": [
+        "How is {metric} performing?",
+        "Are we doing well on {metric}?",
+        "How are we doing with {metric}?",
+        "Is {metric} where it needs to be?",
+        "Show me {metric} performance this {time_period}.",
+        "Are we on track with {metric}?"
+      ]
+    },
+    "compute_variance_from_baseline": {
+      "1": [
+        "How much does this week's {metric} deviate from the historical average?",
+        "Compute the variance of {metric} from its statistical baseline.",
+        "How far is current {metric} from the historical mean?",
+        "What is the statistical deviation of {metric} from baseline?",
+        "Show me {metric} variance from the rolling average baseline.",
+        "Calculate the deviation of {metric} from its historical norm."
+      ],
+      "2": [
+        "Is this period's {metric} unusually high or low compared to history?",
+        "How different is current {metric} from what we normally see?",
+        "Is {metric} within normal statistical range compared to historical data?",
+        "How does current {metric} compare to the historical norm?",
+        "Is {metric} behaving normally relative to past data?",
+        "Is there a significant deviation in {metric} from the historical baseline?"
+      ],
+      "3": [
+        "Is {metric} normal right now?",
+        "How does {metric} compare historically?",
+        "Is anything off with {metric}?",
+        "Is {metric} performing as expected?",
+        "How unusual is the current {metric} level?",
+        "Is {metric} where we would expect it to be?"
+      ]
+    },
+    "export_to_csv": {
+      "1": [
+        "Export the {metric} data to a CSV file.",
+        "Download the {dataset_name} as a CSV.",
+        "Give me a CSV export of the {dimension} data.",
+        "Save the {metric} records to a CSV file.",
+        "Export the filtered data to a CSV.",
+        "Can you export {dataset_name} as a CSV for me?"
+      ],
+      "2": [
+        "Can you give me the raw {metric} data as a downloadable file?",
+        "I need the {dimension} data exported for external analysis.",
+        "Pull the {metric} data so I can work with it in Excel.",
+        "Give me the data I can download.",
+        "I want to export the {dataset_name} data for offline use.",
+        "Can you export the {metric} data so I can process it externally?"
+      ],
+      "3": [
+        "Can you give me the {metric} data?",
+        "I need the {dimension} data.",
+        "Give me access to the raw {metric} numbers.",
+        "Pull the {dataset_name} data for me.",
+        "I need to work with the {metric} data.",
+        "Can you share the {metric} data with me?"
+      ]
+    },
+    "generate_summary_report": {
+      "1": [
+        "Generate a summary report for {metric} over {time_period}.",
+        "Create a formatted report covering {metric} performance this {time_period}.",
+        "Produce a formatted summary report for the {time_period} {metric} results.",
+        "Generate a {metric} performance report for {time_period}.",
+        "Create a business report on {metric} for {time_period}.",
+        "Write up a formal summary report on {metric} for {time_period}."
+      ],
+      "2": [
+        "Can you put together a report on {metric} for {time_period}?",
+        "I need a summary of {metric} performance for {time_period}.",
+        "Can you create an overview of how {metric} did in {time_period}?",
+        "Write up a summary of our {metric} results for {time_period}.",
+        "Prepare a {metric} overview document for {time_period}.",
+        "Can you compile the {metric} results into a report for {time_period}?"
+      ],
+      "3": [
+        "Give me a summary of {metric} for {time_period}.",
+        "What happened with {metric} in {time_period}?",
+        "Show me an overview of {metric}.",
+        "Can you summarize {metric} for {time_period}?",
+        "What is the {metric} story for {time_period}?",
+        "Walk me through {metric} for {time_period}."
+      ]
+    },
+    "create_dashboard_snapshot": {
+      "1": [
+        "Take a snapshot of the current dashboard.",
+        "Capture the current dashboard as a PDF.",
+        "Save the current dashboard view as a PNG image.",
+        "Screenshot the current state of the dashboard.",
+        "Export the current dashboard as a PNG.",
+        "Create a static snapshot of the current dashboard."
+      ],
+      "2": [
+        "Save the current dashboard so I can share it with stakeholders.",
+        "Can you capture what the dashboard looks like right now?",
+        "I want to preserve the current dashboard view for a meeting.",
+        "Can you export the current dashboard state?",
+        "Save the dashboard with the current filters applied.",
+        "Can you freeze the current dashboard view?"
+      ],
+      "3": [
+        "Can you save the current view for me?",
+        "I want to share what I am currently looking at.",
+        "Can you capture this for my presentation?",
+        "Save what the dashboard shows right now.",
+        "Can I get a copy of what is currently on screen?",
+        "I need to share the current view with my team."
+      ]
+    },
+    "describe_dataset": {
+      "1": [
+        "What columns does the {dataset_name} dataset have?",
+        "Describe the schema of {dataset_name}.",
+        "What is the structure of the {dataset_name} table?",
+        "Show me the columns and data types in {dataset_name}.",
+        "What fields are available in {dataset_name}?",
+        "Give me the schema of the {dataset_name} dataset."
+      ],
+      "2": [
+        "What does the {dataset_name} dataset look like?",
+        "Can you tell me about the structure of {dataset_name}?",
+        "What data is in the {dataset_name} table?",
+        "Show me what is available in the {dataset_name} dataset.",
+        "What is the layout of the {dataset_name} data?",
+        "Can you describe what {dataset_name} contains?"
+      ],
+      "3": [
+        "What data do we have in {dataset_name}?",
+        "Tell me about {dataset_name}.",
+        "What can I work with in {dataset_name}?",
+        "Show me what is available in {dataset_name}.",
+        "What is in the {dataset_name} dataset?",
+        "What does {dataset_name} look like?"
+      ]
+    },
+    "get_column_statistics": {
+      "1": [
+        "What is the distribution of values in the {column_name} column?",
+        "Show me descriptive statistics for the {column_name} column in {dataset_name}.",
+        "What are the min, max, and average values of {column_name}?",
+        "How many nulls are there in the {column_name} column?",
+        "Show me the statistical summary for {column_name}.",
+        "What is the standard deviation of {column_name} in {dataset_name}?"
+      ],
+      "2": [
+        "What does the {column_name} data look like statistically?",
+        "What is the range of values in {column_name}?",
+        "Are there any data quality issues in {column_name}?",
+        "What are the typical values in {column_name}?",
+        "Show me the value distribution for {column_name}.",
+        "What does the {column_name} column tell us numerically?"
+      ],
+      "3": [
+        "What is the {column_name} data like?",
+        "Tell me about the {column_name} column.",
+        "What does {column_name} contain in {dataset_name}?",
+        "Show me what {column_name} looks like.",
+        "What are the {column_name} values like?",
+        "Give me an overview of {column_name}."
+      ]
+    },
+    "list_available_metrics": {
+      "1": [
+        "What metrics are available to track in the platform?",
+        "List all available KPIs we can measure.",
+        "What business metrics can I query in the system?",
+        "Show me all trackable metrics available to me.",
+        "What KPIs does the BI platform support?",
+        "Give me a catalog of all available metrics."
+      ],
+      "2": [
+        "What can we measure in the BI platform?",
+        "What metrics do we have access to?",
+        "What data points can we track in this system?",
+        "What are all the metrics we currently monitor?",
+        "Can you tell me what metrics are available?",
+        "What are all the KPIs we can report on?"
+      ],
+      "3": [
+        "What do we track as a business?",
+        "What data do we have available to analyze?",
+        "What can I measure in here?",
+        "What metrics exist in the system?",
+        "What is available for me to analyze?",
+        "What are all the things I can report on?"
+      ]
+    },
+    "compute_correlation": {
+      "1": [
+        "What is the Pearson correlation between {metric} and {column_name}?",
+        "Compute the correlation coefficient between {metric} and {column_name}.",
+        "Are {metric} and {column_name} statistically correlated?",
+        "Show me the correlation between {metric} and {column_name}.",
+        "What is the correlation score between {metric} and {column_name}?",
+        "Calculate the Spearman correlation between {metric} and {column_name}."
+      ],
+      "2": [
+        "Is there a statistical relationship between {metric} and {column_name}?",
+        "Do {metric} and {column_name} move together?",
+        "How closely related are {metric} and {column_name} statistically?",
+        "Is {metric} associated with {column_name}?",
+        "Do {metric} and {column_name} track each other?",
+        "Is there a measurable link between {metric} and {column_name}?"
+      ],
+      "3": [
+        "Does {metric} affect {column_name}?",
+        "Is there a connection between {metric} and {column_name}?",
+        "Are {metric} and {column_name} related?",
+        "How does {metric} relate to {column_name}?",
+        "Does {metric} influence {column_name}?",
+        "Is {metric} tied to {column_name}?"
+      ]
+    },
+    "run_regression_analysis": {
+      "1": [
+        "Run a linear regression to predict {metric} from {column_name}.",
+        "What is the regression coefficient of {column_name} on {metric}?",
+        "Fit a regression model with {column_name} as a predictor of {metric}.",
+        "Model {metric} as a function of {column_name} using regression.",
+        "Run a regression analysis to explain {metric} using {column_name}.",
+        "What is the R-squared of a regression model predicting {metric} from {column_name}?"
+      ],
+      "2": [
+        "How much does {column_name} drive {metric}?",
+        "What is the effect size of {column_name} on {metric}?",
+        "If we change {column_name}, what impact does that have on {metric}?",
+        "What is the predictive power of {column_name} for {metric}?",
+        "Build a model that explains {metric} using {column_name}.",
+        "How does {column_name} predict {metric}?"
+      ],
+      "3": [
+        "Does {column_name} drive {metric}?",
+        "What causes changes in {metric}?",
+        "What is the impact of {column_name} on our {metric}?",
+        "Can we use {column_name} to predict {metric}?",
+        "How much is {metric} driven by {column_name}?",
+        "What explains {metric} behavior?"
+      ]
+    },
+    "detect_anomaly": {
+      "1": [
+        "Detect anomalies in the {metric} data over {time_period}.",
+        "Are there any statistical outliers in {metric}?",
+        "Flag unusual values in {metric} using Z-score detection.",
+        "Show me anomalies in {metric} over the past {time_period}.",
+        "Identify any data points in {metric} that look statistically abnormal.",
+        "Run anomaly detection on {metric} data."
+      ],
+      "2": [
+        "Is there anything statistically unusual in the {metric} data?",
+        "Did anything strange happen with {metric} recently?",
+        "Are there any unexpected spikes or drops in {metric}?",
+        "Does {metric} have any suspicious values?",
+        "Flag anything that looks statistically off in {metric}.",
+        "Are there any anomalies worth investigating in {metric}?"
+      ],
+      "3": [
+        "Why did {metric} spike last {time_period}?",
+        "Is there something wrong with the {metric} data?",
+        "Did anything unusual happen with {metric}?",
+        "Is {metric} behaving normally right now?",
+        "What is going on with {metric}?",
+        "Why is {metric} acting differently than expected?"
+      ]
+    }
+  },
+  "reference_reasoning_templates": {
+    "aggregate_metric": [
+      "The query asks for a single summary statistic ({aggregation_function}) with no indication of time windows, rolling periods, or cumulative totals. The correct tool is aggregate_metric because it returns one scalar value over the specified scope. Tools like compute_rolling_average would return a time-indexed series, and compute_cumulative_sum would return an ever-growing total — neither matches the intent for a single aggregate number.",
+      "A one-shot aggregate is appropriate here because the query requests a total or overall figure without implying temporal smoothing or running accumulation. The disambiguation signal is the absence of any rolling, sliding, or cumulative language."
+    ],
+    "compute_rolling_average": [
+      "The query involves smoothing or tracking a metric over a moving time window of {window_size} days. The correct tool is compute_rolling_average because it returns a time-indexed series of smoothed values. aggregate_metric would collapse this to a single number (losing temporal detail), while compute_cumulative_sum would show an ever-increasing total rather than a smoothed view.",
+      "The presence of a sliding window size ({window_size} days) and the intent to smooth fluctuations disambiguates this from a one-shot aggregate or cumulative sum. compute_rolling_average is the correct choice when the user wants periodic smoothed values, not a single figure or running total."
+    ],
+    "compute_cumulative_sum": [
+      "The query tracks an accumulating total over time — a running sum that grows with each new period. compute_cumulative_sum is correct because it returns a time-indexed series where each value is the total accumulated up to that point. This differs from aggregate_metric (single scalar) and compute_rolling_average (smoothed window average, not a growing total).",
+      "The key signal is the intent to see a running total or year-to-date accumulation rather than a static aggregate or smoothed moving average. compute_cumulative_sum captures this growing, additive behavior."
+    ],
+    "filter_records": [
+      "The query specifies a fixed condition ({dimension} = {dimension_value}) to restrict the dataset to matching rows only. filter_records is correct because it performs row-level subsetting. segment_by_dimension would instead aggregate across all dimension values (not restrict to one), and apply_cohort_filter would define a behaviorally-derived group rather than a static attribute filter.",
+      "The disambiguation signal is the explicit single-value condition on a dimension column. The user wants only matching rows, not a cross-dimensional breakdown or a behavior-based cohort."
+    ],
+    "segment_by_dimension": [
+      "The query asks for a breakdown of {metric} across all values of {dimension} — a group-by aggregation. segment_by_dimension is correct because it returns one row per dimension value with the aggregated metric. filter_records would restrict to a single value, and apply_cohort_filter would isolate a behaviorally-defined group rather than producing a full dimensional breakdown.",
+      "The key signal is 'for each {dimension}' or 'by {dimension}', indicating the user wants to compare across all dimension categories, not filter to one specific value."
+    ],
+    "apply_cohort_filter": [
+      "The query defines a group of entities based on a behavioral event sequence within a time window — the hallmark of cohort analysis. apply_cohort_filter is correct because the group membership is determined by temporal behavior, not a static attribute value. filter_records handles static attribute conditions, and segment_by_dimension produces a dimensional breakdown rather than isolating a specific behavioral cohort.",
+      "The disambiguation signal is the behavioral definition of the group (e.g., 'users who did X within Y days of Z'), which requires cohort logic rather than simple row filtering or dimensional segmentation."
+    ],
+    "compute_trend_line": [
+      "The query asks about the historical direction and rate of change of {metric} using past data only. compute_trend_line is correct because it fits a regression line to historical values and returns coefficients describing the trend. generate_forecast would produce future projections (not requested), and detect_seasonality would look for cyclical patterns rather than a directional trend line.",
+      "The disambiguation signal is the historical framing — 'how has {metric} been trending' or 'what is the rate of change' — with no forward-looking language. The user wants to characterize the historical trajectory, not predict future values."
+    ],
+    "generate_forecast": [
+      "The query explicitly asks for future projections of {metric} over the next {forecast_horizon} {forecast_horizon_unit}. generate_forecast is correct because it uses a time-series model to predict future values with confidence intervals. compute_trend_line only describes the historical direction without producing future point estimates, and detect_seasonality identifies cyclical patterns without generating forward projections.",
+      "The key disambiguation signal is forward-looking language: 'will', 'next', 'predict', 'forecast', or 'expect'. This clearly indicates the user wants future estimates, not a historical trend characterization or seasonality analysis."
+    ],
+    "detect_seasonality": [
+      "The query asks whether {metric} exhibits recurring cyclical patterns at regular intervals. detect_seasonality is correct because it decomposes the time series to identify periodic behavior. compute_trend_line captures directional change over time without decomposing cycles, and generate_forecast produces future projections without specifically identifying whether the signal is driven by seasonality.",
+      "The disambiguation signal is language around cycles, recurring patterns, or time-of-year behavior. The user wants to know if {metric} follows a periodic pattern, not its historical direction or future value."
+    ],
+    "rank_entities": [
+      "The query asks for a complete ordered ranking of all {entities} by {metric}, assigning an ordinal rank to each. rank_entities is correct because it processes every entity and attaches a rank value. get_top_n_records only slices the top or bottom N without assigning explicit ranks to all entities, and compute_percentile_rank expresses standing as a percentile (0-100) rather than an ordinal position.",
+      "The key signal is 'rank all' or 'full leaderboard' — the user wants every entity to receive an ordinal rank number, not just a top-N slice or a percentile score."
+    ],
+    "get_top_n_records": [
+      "The query asks for a fixed-size slice of the top or bottom {n} records sorted by {metric}. get_top_n_records is correct because it returns exactly {n} rows without computing rank values for all entities. rank_entities would assign ordinal ranks to all entities (more work than needed), and compute_percentile_rank would express standing as a distribution percentage rather than returning a simple top-N list.",
+      "The disambiguation signal is the explicit count — 'top {n}' or 'bottom {n}' — indicating the user wants a bounded list, not a full ranking or percentile distribution."
+    ],
+    "compute_percentile_rank": [
+      "The query asks where each {entity_singular} falls in the distribution of {metric} expressed as a percentile. compute_percentile_rank is correct because it returns a 0-100 score for each entity indicating what fraction of peers they outperform. rank_entities assigns ordinal positions (1st, 2nd, 3rd) without expressing relative standing as a percentage, and get_top_n_records simply slices the top rows without calculating distributional standing.",
+      "The disambiguation signal is language about distribution standing, percentiles, or 'what fraction does X beat' — indicating the user wants a normalized distributional score, not an ordinal rank or a top-N list."
+    ],
+    "compare_periods": [
+      "The query compares {metric} between two actual time periods from the data (e.g., this quarter vs. last quarter). compare_periods is correct because both sides of the comparison are real time windows. benchmark_against_target compares against a predefined business goal (not a historical period), and compute_variance_from_baseline computes statistical deviation from a computed historical norm (not a specific prior period).",
+      "The disambiguation signal is that both comparison terms are real time periods — 'this month vs last month', 'Q3 vs Q2', 'year-over-year'. Neither side is a set target or a statistically derived baseline."
+    ],
+    "benchmark_against_target": [
+      "The query compares actual {metric} against a predefined business target or quota. benchmark_against_target is correct because one side of the comparison is a set goal or target column, not a historical time period or statistical baseline. compare_periods compares two actual data periods, and compute_variance_from_baseline derives the comparison value statistically from historical data rather than using a manually set target.",
+      "The disambiguation signal is the presence of a business target, goal, or quota as the comparison benchmark — 'are we hitting our target?', 'how far from our quota?'. The benchmark is intentionally set, not derived from data."
+    ],
+    "compute_variance_from_baseline": [
+      "The query asks how much {metric} deviates from a statistically derived historical baseline (e.g., historical mean or rolling average), not from a predefined business target or a specific prior period. compute_variance_from_baseline is correct because the baseline is computed from the data itself. benchmark_against_target uses a manually set goal, and compare_periods compares two specific calendar periods rather than measuring deviation from a statistical norm.",
+      "The disambiguation signal is statistical language — 'deviation from the norm', 'within expected range', 'unusual compared to history'. The comparison is against a data-derived baseline, not a business goal or a specific historical period."
+    ],
+    "export_to_csv": [
+      "The query asks for raw data in a downloadable file format. export_to_csv is correct because the user wants unformatted tabular data to use externally (e.g., in Excel or Python). generate_summary_report produces a structured, narrative document rather than raw rows, and create_dashboard_snapshot captures a visual state of an existing dashboard rather than exporting raw data.",
+      "The disambiguation signal is 'CSV', 'raw data', 'export', or 'download for external use' — indicating the user wants machine-readable data rows, not a formatted report or a visual snapshot."
+    ],
+    "generate_summary_report": [
+      "The query asks for a formatted, structured summary report on {metric} for {time_period}. generate_summary_report is correct because the user wants a polished, shareable document with narrative structure. export_to_csv returns raw tabular data without formatting or narrative, and create_dashboard_snapshot captures an existing dashboard view rather than generating a new formatted report.",
+      "The disambiguation signal is 'report', 'summary', 'overview document', or 'write up' — indicating the user wants formatted content suitable for sharing with stakeholders, not raw data or a dashboard screenshot."
+    ],
+    "create_dashboard_snapshot": [
+      "The query refers to capturing the current state of an existing live dashboard. create_dashboard_snapshot is correct because the user wants to preserve the current visual state with active filters. export_to_csv would extract raw data without the visual context, and generate_summary_report would generate new formatted content rather than capturing an existing dashboard view.",
+      "The disambiguation signal is reference to 'the dashboard', 'the current view', or 'what is on screen right now' — indicating the user wants to preserve an existing visual state, not generate new data or a new document."
+    ],
+    "describe_dataset": [
+      "The query asks about the structure, schema, and column layout of {dataset_name}. describe_dataset is correct because the user wants to understand what fields and data types exist. get_column_statistics would compute statistical summaries of column values (not the schema), and list_available_metrics would show business KPI definitions rather than the raw dataset structure.",
+      "The disambiguation signal is schema-oriented language — 'what columns', 'what fields', 'what data types', 'describe the table'. The user wants structural metadata about the dataset, not computed statistics or a business metrics catalog."
+    ],
+    "get_column_statistics": [
+      "The query asks for computed statistical properties of {column_name} — min, max, mean, null count, distribution. get_column_statistics is correct because the user wants numerical summaries of column values. describe_dataset returns the schema (column names and types) without computing statistics, and list_available_metrics shows business metric definitions rather than raw column statistics.",
+      "The disambiguation signal is statistical or data-quality language — 'distribution', 'range of values', 'how many nulls', 'min and max'. The user wants computed statistics on column values, not the schema structure or a business metrics catalog."
+    ],
+    "list_available_metrics": [
+      "The query asks what business metrics and KPIs are available in the platform. list_available_metrics is correct because it returns a catalog of business-level metric definitions. describe_dataset returns the raw schema of a specific table, and get_column_statistics computes numerical summaries of raw columns — neither provides a business metric catalog.",
+      "The disambiguation signal is business-level language — 'what metrics do we track', 'what KPIs are available', 'what can I measure'. The user is asking about defined business metrics, not raw table structure or column statistics."
+    ],
+    "compute_correlation": [
+      "The query asks for a statistical correlation coefficient between {metric} and {column_name} — a measure of how linearly or monotonically related they are. compute_correlation is correct because it returns a scalar relationship score without modeling causation or fitting a predictive model. run_regression_analysis fits a model and returns coefficients with directional causal framing, and detect_anomaly looks for unusual values rather than relationship strength.",
+      "The disambiguation signal is correlation-specific language — 'are they correlated?', 'do they move together?', 'what is the relationship strength?'. The user wants a symmetric association measure, not a directional predictive model or an outlier detection pass."
+    ],
+    "run_regression_analysis": [
+      "The query asks how {column_name} predicts or drives {metric} — a directional, causal modeling question. run_regression_analysis is correct because it fits a model with {column_name} as a predictor and {metric} as the outcome, returning coefficients, R-squared, and p-values. compute_correlation gives a symmetric association score without modeling direction or prediction, and detect_anomaly identifies unusual values rather than modeling relationships.",
+      "The disambiguation signal is directional, predictive, or causal language — 'how much does X affect Y?', 'predict Y from X', 'what is the impact of X?'. The user wants a model coefficient and predictive framing, not a correlation score or anomaly flags."
+    ],
+    "detect_anomaly": [
+      "The query asks for unusual, unexpected, or statistically anomalous values in {metric}. detect_anomaly is correct because it flags data points that deviate significantly from expected behavior using statistical methods. compute_correlation and run_regression_analysis both analyze relationships between variables rather than identifying individual anomalous data points.",
+      "The disambiguation signal is anomaly-focused language — 'unusual values', 'spikes', 'outliers', 'something looks off', 'why did X spike'. The user wants to identify individual abnormal data points, not quantify a relationship between variables."
+    ]
+  }
+}

@@ -1,0 +1,844 @@
+{
+  "domain": "bi",
+  "version": "1.0.0",
+  "description": "Tool definitions for the Business Intelligence / Data Analysis domain. Each tool belongs to a confusion group — a set of tools that are likely to be confused with each other by an LLM given an ambiguous natural language query.",
+  "confusion_groups": [
+    {
+      "id": "aggregation_vs_window",
+      "display_name": "Aggregation vs. Window",
+      "description": "Queries that involve computing a sum, average, or count are ambiguous between a one-shot aggregate over the entire dataset, a rolling/sliding window computation, and a running cumulative total. The confusion arises because all three produce a numeric summary from a numeric column, and users rarely say 'rolling' or 'cumulative' explicitly.",
+      "confusion_note": "A query like 'What is the average revenue per day?' could mean the overall daily average (aggregate), the 7-day rolling average (rolling), or the running total average to date (cumulative). Surface-level bag-of-words similarity is high across all three tools."
+    },
+    {
+      "id": "filtering_vs_segmentation",
+      "display_name": "Filtering vs. Segmentation",
+      "description": "Queries that reference a subset of data ('for region X', 'among users who did Y') are ambiguous between row-level filtering (keep only matching rows), dimensional segmentation (group and compare across all values of a dimension), and cohort-based filtering (select a behaviorally defined group). Users conflate 'show me X for Y' with both filtering and grouping.",
+      "confusion_note": "A query like 'Show me revenue for each region' could mean filter to one region (filter_records), break down revenue by region (segment_by_dimension), or isolate a behaviorally defined regional cohort (apply_cohort_filter)."
+    },
+    {
+      "id": "trend_vs_forecast",
+      "display_name": "Trend vs. Forecast",
+      "description": "Queries about how a metric behaves over time are ambiguous between fitting a trend line to historical data, projecting future values, and decomposing the time series into seasonal components. Users often say 'how is X trending' when they mean any of these.",
+      "confusion_note": "A query like 'How will sales trend over the next quarter?' could mean fit a trend line to past data (compute_trend_line), generate a future projection (generate_forecast), or identify whether the pattern is seasonal (detect_seasonality)."
+    },
+    {
+      "id": "ranking_vs_topn",
+      "display_name": "Ranking vs. Top-N",
+      "description": "Queries about best/worst/top/bottom performers are ambiguous between assigning ordinal ranks to all entities, returning only the top or bottom N records, and computing the percentile rank of each entity. Users say 'top performers' or 'ranked list' without specifying which operation they want.",
+      "confusion_note": "A query like 'Who are the top 5 sales reps?' could mean rank all reps and return the top 5 (rank_entities), directly slice the top 5 rows (get_top_n_records), or show what percentile each rep falls in (compute_percentile_rank)."
+    },
+    {
+      "id": "comparison_vs_benchmarking",
+      "display_name": "Comparison vs. Benchmarking",
+      "description": "Queries that ask 'how did X do vs Y' are ambiguous between comparing two time periods (e.g. this month vs. last month), comparing actual values against a predefined target or goal, and computing variance from a statistical baseline. The word 'compare' or 'vs' appears in all three use cases.",
+      "confusion_note": "A query like 'How did Q3 perform compared to target?' could mean compare two time periods (compare_periods), measure against a business target (benchmark_against_target), or compute statistical deviation from a baseline (compute_variance_from_baseline)."
+    },
+    {
+      "id": "export_vs_report",
+      "display_name": "Export vs. Report",
+      "description": "Queries asking to 'get', 'pull', or 'give me' data are ambiguous between exporting raw data to a file, generating a formatted summary report, and creating a visual dashboard snapshot. Users say 'give me the data' when they sometimes mean a formatted report.",
+      "confusion_note": "A query like 'Give me the monthly sales data' could mean export raw rows to CSV (export_to_csv), produce a formatted summary document (generate_summary_report), or capture the current dashboard state as an image (create_dashboard_snapshot)."
+    },
+    {
+      "id": "schema_vs_metadata",
+      "display_name": "Schema vs. Metadata",
+      "description": "Exploratory queries about the dataset itself are ambiguous between describing the dataset's structure and schema, computing statistical summaries of individual columns, and listing the available business metrics. Users say 'what data do we have' or 'tell me about this dataset' for all three.",
+      "confusion_note": "A query like 'What does this dataset contain?' could mean show the schema (describe_dataset), show column-level statistics like min/max/nulls (get_column_statistics), or list available KPIs and metrics (list_available_metrics)."
+    },
+    {
+      "id": "correlation_vs_causation",
+      "display_name": "Correlation vs. Causation Analysis",
+      "description": "Queries about the relationship between two variables are ambiguous between computing a correlation coefficient, running a regression to model one variable as a function of another, and detecting statistical anomalies that may indicate unusual behavior. Users say 'X affects Y' or 'X is related to Y' for all three.",
+      "confusion_note": "A query like 'Does ad spend affect revenue?' could mean compute the correlation between the two (compute_correlation), run a regression with ad spend as a predictor (run_regression_analysis), or detect revenue anomalies that coincide with ad spend changes (detect_anomaly)."
+    }
+  ],
+  "tools": [
+    {
+      "name": "aggregate_metric",
+      "display_name": "Aggregate Metric",
+      "confusion_group": "aggregation_vs_window",
+      "description": "Computes a single aggregate statistic (sum, mean, median, count, min, max) over a specified numeric column across the entire dataset or a filtered subset. Returns one scalar value. Use this when the user wants a single summary number for the whole dataset or a filtered slice — not over time windows.",
+      "disambiguation_hint": "Use this tool when the query asks for a total, overall average, or single summary statistic with no mention of time windows, rolling periods, or running totals.",
+      "args": {
+        "metric_column": {
+          "type": "string",
+          "description": "Name of the numeric column to aggregate.",
+          "required": true
+        },
+        "aggregation_function": {
+          "type": "string",
+          "enum": ["sum", "mean", "median", "count", "min", "max"],
+          "description": "The aggregation function to apply.",
+          "required": true
+        },
+        "filter_condition": {
+          "type": "string",
+          "description": "Optional SQL-style filter expression to apply before aggregating (e.g., 'region = \"North\"').",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "number",
+        "description": "A single scalar aggregate value."
+      }
+    },
+    {
+      "name": "compute_rolling_average",
+      "display_name": "Compute Rolling Average",
+      "confusion_group": "aggregation_vs_window",
+      "description": "Computes a rolling (sliding window) average of a numeric column over a specified window size along a date or time column. Returns a time-indexed series with one rolling average value per row. Use this when the user wants to smooth out fluctuations or see a moving average over a defined time window.",
+      "disambiguation_hint": "Use this tool when the query mentions a rolling, moving, or sliding window average, or when the intent is to smooth a time series over a recurring period.",
+      "args": {
+        "metric_column": {
+          "type": "string",
+          "description": "Name of the numeric column to compute the rolling average on.",
+          "required": true
+        },
+        "date_column": {
+          "type": "string",
+          "description": "Name of the date or timestamp column to roll over.",
+          "required": true
+        },
+        "window_size": {
+          "type": "integer",
+          "description": "Number of periods (rows) to include in each rolling window.",
+          "required": true
+        },
+        "window_unit": {
+          "type": "string",
+          "enum": ["days", "weeks", "months"],
+          "description": "Time unit corresponding to the window size.",
+          "required": true
+        }
+      },
+      "returns": {
+        "type": "array",
+        "description": "A time-indexed array of rolling average values."
+      }
+    },
+    {
+      "name": "compute_cumulative_sum",
+      "display_name": "Compute Cumulative Sum",
+      "confusion_group": "aggregation_vs_window",
+      "description": "Computes the running cumulative sum of a numeric column sorted by a date or ordering column. Returns a time-indexed series where each value is the total accumulated up to that point. Use this when the user wants to track a running total over time.",
+      "disambiguation_hint": "Use this tool when the query mentions 'running total', 'cumulative', 'to date', or 'year-to-date (YTD)' style aggregations.",
+      "args": {
+        "metric_column": {
+          "type": "string",
+          "description": "Name of the numeric column to cumulatively sum.",
+          "required": true
+        },
+        "date_column": {
+          "type": "string",
+          "description": "Name of the date or ordering column to sort by before accumulating.",
+          "required": true
+        },
+        "group_by": {
+          "type": "string",
+          "description": "Optional column to compute cumulative sums within each group independently (e.g., per region).",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "array",
+        "description": "A time-indexed array of cumulative sum values."
+      }
+    },
+    {
+      "name": "filter_records",
+      "display_name": "Filter Records",
+      "confusion_group": "filtering_vs_segmentation",
+      "description": "Filters the dataset to return only rows that match a given condition. Returns a subset of the original rows with all original columns preserved. Use this when the user wants to narrow down the data to specific rows matching explicit criteria.",
+      "disambiguation_hint": "Use this tool when the user specifies a fixed condition to restrict rows — e.g., 'only show rows where region is North' or 'filter to active users'. Do not use when the user wants to compare across all values of a dimension.",
+      "args": {
+        "filter_condition": {
+          "type": "string",
+          "description": "SQL-style filter expression (e.g., 'status = \"active\" AND revenue > 1000').",
+          "required": true
+        },
+        "columns_to_return": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Optional list of column names to include in the result. Returns all columns if omitted.",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "array",
+        "description": "Array of row objects matching the filter condition."
+      }
+    },
+    {
+      "name": "segment_by_dimension",
+      "display_name": "Segment by Dimension",
+      "confusion_group": "filtering_vs_segmentation",
+      "description": "Groups the dataset by one or more categorical dimensions and computes an aggregate metric for each group. Returns one row per unique combination of dimension values with the computed aggregate. Use this when the user wants a breakdown or comparison across all values of a dimension.",
+      "disambiguation_hint": "Use this tool when the query asks to 'break down by', 'compare across', or 'show X for each Y' — implying a group-by across all categories, not a filter to one.",
+      "args": {
+        "group_by_columns": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "One or more categorical columns to group by.",
+          "required": true
+        },
+        "metric_column": {
+          "type": "string",
+          "description": "Numeric column to aggregate within each group.",
+          "required": true
+        },
+        "aggregation_function": {
+          "type": "string",
+          "enum": ["sum", "mean", "count", "median", "min", "max"],
+          "description": "Aggregation function to apply per group.",
+          "required": true
+        }
+      },
+      "returns": {
+        "type": "array",
+        "description": "Array of objects, one per group, with dimension values and the computed aggregate."
+      }
+    },
+    {
+      "name": "apply_cohort_filter",
+      "display_name": "Apply Cohort Filter",
+      "confusion_group": "filtering_vs_segmentation",
+      "description": "Filters the dataset to a behaviorally or temporally defined cohort — a group of entities (e.g., users, customers) that share a common event or characteristic within a specified time window. Unlike filter_records which filters on static attributes, cohort filters are based on event sequences or lifecycle stages.",
+      "disambiguation_hint": "Use this tool when the user defines a group based on behavior over time — e.g., 'users who signed up in January and made a purchase within 30 days'. Do not use for simple attribute-based row filters.",
+      "args": {
+        "cohort_definition": {
+          "type": "string",
+          "description": "Human-readable description of the cohort logic (e.g., 'users who completed onboarding in Q1 2024').",
+          "required": true
+        },
+        "cohort_start_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Start of the cohort definition window (ISO 8601 date).",
+          "required": true
+        },
+        "cohort_end_date": {
+          "type": "string",
+          "format": "date",
+          "description": "End of the cohort definition window (ISO 8601 date).",
+          "required": true
+        },
+        "entity_id_column": {
+          "type": "string",
+          "description": "Column identifying the entity (e.g., user_id, customer_id).",
+          "required": true
+        }
+      },
+      "returns": {
+        "type": "array",
+        "description": "Array of entity records belonging to the defined cohort."
+      }
+    },
+    {
+      "name": "compute_trend_line",
+      "display_name": "Compute Trend Line",
+      "confusion_group": "trend_vs_forecast",
+      "description": "Fits a trend line (linear or polynomial regression) to historical time series data and returns the trend coefficients and the fitted values. Use this when the user wants to understand the direction and rate of change of a metric based on historical data only — not to predict future values.",
+      "disambiguation_hint": "Use this tool when the query asks about historical trend direction — e.g., 'is revenue trending up?', 'what is the growth rate?'. Do not use when the user explicitly asks for future predictions or forecasts.",
+      "args": {
+        "metric_column": {
+          "type": "string",
+          "description": "Name of the numeric metric column to fit the trend on.",
+          "required": true
+        },
+        "date_column": {
+          "type": "string",
+          "description": "Name of the date column representing the time axis.",
+          "required": true
+        },
+        "trend_type": {
+          "type": "string",
+          "enum": ["linear", "polynomial"],
+          "description": "Type of trend line to fit.",
+          "required": true
+        },
+        "polynomial_degree": {
+          "type": "integer",
+          "description": "Degree of polynomial (only used when trend_type is 'polynomial').",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "object",
+        "description": "Object containing trend coefficients, R-squared value, and array of fitted values."
+      }
+    },
+    {
+      "name": "generate_forecast",
+      "display_name": "Generate Forecast",
+      "confusion_group": "trend_vs_forecast",
+      "description": "Generates a forward-looking forecast for a time series metric using a statistical or ML-based forecasting model (e.g., ARIMA, ETS, Prophet-style). Returns predicted future values with confidence intervals. Use this when the user explicitly wants future projections.",
+      "disambiguation_hint": "Use this tool when the query contains forward-looking intent — e.g., 'predict', 'forecast', 'what will X be next quarter', 'project future values'. Do not use for analyzing historical trend direction.",
+      "args": {
+        "metric_column": {
+          "type": "string",
+          "description": "Name of the metric column to forecast.",
+          "required": true
+        },
+        "date_column": {
+          "type": "string",
+          "description": "Name of the date column.",
+          "required": true
+        },
+        "forecast_horizon": {
+          "type": "integer",
+          "description": "Number of future periods to forecast.",
+          "required": true
+        },
+        "horizon_unit": {
+          "type": "string",
+          "enum": ["days", "weeks", "months", "quarters"],
+          "description": "Time unit for the forecast horizon.",
+          "required": true
+        },
+        "model_type": {
+          "type": "string",
+          "enum": ["arima", "ets", "prophet"],
+          "description": "Forecasting model to use.",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "object",
+        "description": "Object containing forecast values, confidence intervals, and the model used."
+      }
+    },
+    {
+      "name": "detect_seasonality",
+      "display_name": "Detect Seasonality",
+      "confusion_group": "trend_vs_forecast",
+      "description": "Analyzes a time series to detect and quantify seasonal patterns — recurring cycles at regular intervals (daily, weekly, monthly, yearly). Returns the dominant seasonal period, seasonal strength score, and decomposed seasonal component. Use this when the user wants to understand if and how a metric repeats in a cyclical pattern.",
+      "disambiguation_hint": "Use this tool when the query mentions cycles, seasonal patterns, or asks whether a metric behaves differently at certain times of year/week/day. Do not use for linear trend analysis or future forecasting.",
+      "args": {
+        "metric_column": {
+          "type": "string",
+          "description": "Name of the time series metric column.",
+          "required": true
+        },
+        "date_column": {
+          "type": "string",
+          "description": "Name of the date column.",
+          "required": true
+        },
+        "expected_period": {
+          "type": "string",
+          "enum": ["daily", "weekly", "monthly", "quarterly", "yearly", "auto"],
+          "description": "Expected seasonal period to test for. Use 'auto' for automatic detection.",
+          "required": true
+        }
+      },
+      "returns": {
+        "type": "object",
+        "description": "Object containing detected period, seasonal strength, and decomposed seasonal component array."
+      }
+    },
+    {
+      "name": "rank_entities",
+      "display_name": "Rank Entities",
+      "confusion_group": "ranking_vs_topn",
+      "description": "Assigns ordinal ranks to all entities in a dataset based on a specified metric, returning the complete ranked list. Use this when the user wants to see the full ordering of all entities from best to worst (or vice versa) — not just the top N.",
+      "disambiguation_hint": "Use this tool when the user wants a ranked list of all entities, a leaderboard, or rank assignments for every record. Do not use when the user only wants a slice of the top or bottom N records.",
+      "args": {
+        "entity_column": {
+          "type": "string",
+          "description": "Column identifying each entity to be ranked (e.g., sales_rep_name, product_id).",
+          "required": true
+        },
+        "metric_column": {
+          "type": "string",
+          "description": "Numeric column to rank entities by.",
+          "required": true
+        },
+        "rank_order": {
+          "type": "string",
+          "enum": ["descending", "ascending"],
+          "description": "Whether rank 1 goes to the highest (descending) or lowest (ascending) value.",
+          "required": true
+        },
+        "handle_ties": {
+          "type": "string",
+          "enum": ["average", "min", "max", "dense"],
+          "description": "How to handle tied values.",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "array",
+        "description": "Full array of entity objects with rank assigned, sorted by rank."
+      }
+    },
+    {
+      "name": "get_top_n_records",
+      "display_name": "Get Top N Records",
+      "confusion_group": "ranking_vs_topn",
+      "description": "Returns the top N or bottom N rows from a dataset sorted by a specified column. Unlike rank_entities, this does not compute ordinal ranks — it simply slices the sorted dataset. Use this when the user wants a fixed-size list of the best or worst records.",
+      "disambiguation_hint": "Use this tool when the user asks for 'top 5', 'bottom 10', or any fixed-count slice of the best/worst records. Do not use when the user wants rank values assigned to all entities.",
+      "args": {
+        "sort_column": {
+          "type": "string",
+          "description": "Column to sort by before slicing.",
+          "required": true
+        },
+        "n": {
+          "type": "integer",
+          "description": "Number of records to return.",
+          "required": true
+        },
+        "direction": {
+          "type": "string",
+          "enum": ["top", "bottom"],
+          "description": "Whether to return the top N (highest) or bottom N (lowest) records.",
+          "required": true
+        },
+        "columns_to_return": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Optional list of columns to include in the result.",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "array",
+        "description": "Array of the top or bottom N row objects."
+      }
+    },
+    {
+      "name": "compute_percentile_rank",
+      "display_name": "Compute Percentile Rank",
+      "confusion_group": "ranking_vs_topn",
+      "description": "Computes the percentile rank of each entity's metric value within the full distribution. Returns a value between 0 and 100 for each entity indicating what percentage of other entities it outperforms. Use this when the user wants to understand relative standing in terms of percentiles rather than ordinal ranks.",
+      "disambiguation_hint": "Use this tool when the user asks 'what percentile is X in?', 'how does X compare to the distribution?', or wants to know the relative standing as a percentage. Do not use for simple top-N slicing.",
+      "args": {
+        "entity_column": {
+          "type": "string",
+          "description": "Column identifying each entity.",
+          "required": true
+        },
+        "metric_column": {
+          "type": "string",
+          "description": "Numeric column to compute percentile ranks from.",
+          "required": true
+        },
+        "group_by": {
+          "type": "string",
+          "description": "Optional column to compute percentile ranks within each group independently.",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "array",
+        "description": "Array of entity objects with a percentile_rank field added (0–100)."
+      }
+    },
+    {
+      "name": "compare_periods",
+      "display_name": "Compare Periods",
+      "confusion_group": "comparison_vs_benchmarking",
+      "description": "Compares the value of one or more metrics across two specified time periods, computing the absolute and percentage change between them. Use this when the user wants to compare actual values across two time windows — e.g., month-over-month, year-over-year.",
+      "disambiguation_hint": "Use this tool when both comparison terms are actual time periods from the data (e.g., 'Q3 vs Q2', 'this month vs last month'). Do not use when comparing against a predefined target or goal.",
+      "args": {
+        "metric_columns": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "One or more metric columns to compare across periods.",
+          "required": true
+        },
+        "period_a_start": {
+          "type": "string",
+          "format": "date",
+          "description": "Start date of the first (reference) period.",
+          "required": true
+        },
+        "period_a_end": {
+          "type": "string",
+          "format": "date",
+          "description": "End date of the first (reference) period.",
+          "required": true
+        },
+        "period_b_start": {
+          "type": "string",
+          "format": "date",
+          "description": "Start date of the second (comparison) period.",
+          "required": true
+        },
+        "period_b_end": {
+          "type": "string",
+          "format": "date",
+          "description": "End date of the second (comparison) period.",
+          "required": true
+        },
+        "date_column": {
+          "type": "string",
+          "description": "Name of the date column to use for period filtering.",
+          "required": true
+        }
+      },
+      "returns": {
+        "type": "object",
+        "description": "Object with metric values for both periods, absolute change, and percentage change."
+      }
+    },
+    {
+      "name": "benchmark_against_target",
+      "display_name": "Benchmark Against Target",
+      "confusion_group": "comparison_vs_benchmarking",
+      "description": "Compares actual metric values against predefined business targets or goals, computing attainment percentage and gap. Use this when there is a known target, quota, or goal that the actual value should be measured against.",
+      "disambiguation_hint": "Use this tool when the comparison involves a business goal, quota, or target — e.g., 'are we hitting our sales target?', 'how far are we from the Q4 goal?'. One side of the comparison is always a predefined target, not a historical period.",
+      "args": {
+        "metric_column": {
+          "type": "string",
+          "description": "Column containing actual values.",
+          "required": true
+        },
+        "target_column": {
+          "type": "string",
+          "description": "Column containing target or goal values.",
+          "required": true
+        },
+        "date_column": {
+          "type": "string",
+          "description": "Optional date column for time-filtered benchmarking.",
+          "required": false
+        },
+        "period_start": {
+          "type": "string",
+          "format": "date",
+          "description": "Start of the evaluation period.",
+          "required": false
+        },
+        "period_end": {
+          "type": "string",
+          "format": "date",
+          "description": "End of the evaluation period.",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "object",
+        "description": "Object with actual value, target value, attainment percentage, and gap."
+      }
+    },
+    {
+      "name": "compute_variance_from_baseline",
+      "display_name": "Compute Variance from Baseline",
+      "confusion_group": "comparison_vs_benchmarking",
+      "description": "Computes the statistical variance or deviation of a metric from a computed baseline (e.g., historical mean, median, or a rolling average baseline). Differs from benchmark_against_target in that the baseline is derived statistically from the data, not set as a business goal. Use this for anomaly context or statistical deviation analysis.",
+      "disambiguation_hint": "Use this tool when the baseline is computed from the data itself (e.g., 'how much does this week deviate from the historical average?') rather than a manually set target. The baseline is statistical, not a business goal.",
+      "args": {
+        "metric_column": {
+          "type": "string",
+          "description": "Column of metric values to compute variance for.",
+          "required": true
+        },
+        "date_column": {
+          "type": "string",
+          "description": "Date column for time-based baseline computation.",
+          "required": true
+        },
+        "baseline_type": {
+          "type": "string",
+          "enum": ["historical_mean", "historical_median", "rolling_mean"],
+          "description": "Method for computing the baseline value.",
+          "required": true
+        },
+        "baseline_window_days": {
+          "type": "integer",
+          "description": "Number of past days to use when computing a rolling baseline.",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "object",
+        "description": "Object with baseline value, actual value, absolute variance, and variance percentage."
+      }
+    },
+    {
+      "name": "export_to_csv",
+      "display_name": "Export to CSV",
+      "confusion_group": "export_vs_report",
+      "description": "Exports a dataset or query result to a raw CSV file. Returns a downloadable file path. Use this when the user wants raw, unformatted tabular data to work with externally in a spreadsheet or data tool.",
+      "disambiguation_hint": "Use this tool when the user wants the raw data as a file — e.g., 'download the data', 'export to CSV', 'give me the raw table'. Do not use when the user wants a formatted summary or visual representation.",
+      "args": {
+        "query_or_table": {
+          "type": "string",
+          "description": "SQL query or table name defining the data to export.",
+          "required": true
+        },
+        "filename": {
+          "type": "string",
+          "description": "Desired output filename (without extension).",
+          "required": true
+        },
+        "include_header": {
+          "type": "boolean",
+          "description": "Whether to include column headers in the CSV.",
+          "required": false
+        },
+        "delimiter": {
+          "type": "string",
+          "enum": [",", ";", "|", "\t"],
+          "description": "Column delimiter character.",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "object",
+        "description": "Object containing the file path and row count of the exported file."
+      }
+    },
+    {
+      "name": "generate_summary_report",
+      "display_name": "Generate Summary Report",
+      "confusion_group": "export_vs_report",
+      "description": "Generates a structured, human-readable summary report for a set of metrics over a time period, including narrative text, key statistics, and optional chart references. Returns a formatted report document. Use this when the user wants a polished, shareable report rather than raw data.",
+      "disambiguation_hint": "Use this tool when the user asks for a 'report', 'summary', 'overview', or 'briefing' — implying a formatted, structured document. Do not use when the user wants raw rows or a live dashboard.",
+      "args": {
+        "report_title": {
+          "type": "string",
+          "description": "Title of the report.",
+          "required": true
+        },
+        "metric_columns": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Metrics to include in the report.",
+          "required": true
+        },
+        "date_column": {
+          "type": "string",
+          "description": "Date column for time-based report scoping.",
+          "required": true
+        },
+        "period_start": {
+          "type": "string",
+          "format": "date",
+          "description": "Report start date.",
+          "required": true
+        },
+        "period_end": {
+          "type": "string",
+          "format": "date",
+          "description": "Report end date.",
+          "required": true
+        },
+        "include_charts": {
+          "type": "boolean",
+          "description": "Whether to include chart references in the report.",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "object",
+        "description": "Formatted report object with sections, statistics, and optional chart references."
+      }
+    },
+    {
+      "name": "create_dashboard_snapshot",
+      "display_name": "Create Dashboard Snapshot",
+      "confusion_group": "export_vs_report",
+      "description": "Captures the current state of a live dashboard as a static image or PDF snapshot, preserving all current filter and date range settings. Use this when the user wants to save or share the current view of a live dashboard rather than generating new content.",
+      "disambiguation_hint": "Use this tool when the user wants to 'save', 'screenshot', or 'share' the current dashboard view. The key signal is that the user refers to an existing dashboard, not a new report to be generated.",
+      "args": {
+        "dashboard_id": {
+          "type": "string",
+          "description": "Identifier of the dashboard to snapshot.",
+          "required": true
+        },
+        "output_format": {
+          "type": "string",
+          "enum": ["png", "pdf"],
+          "description": "Format of the snapshot output.",
+          "required": true
+        },
+        "include_filters": {
+          "type": "boolean",
+          "description": "Whether to include active filter context in the snapshot.",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "object",
+        "description": "Object containing the snapshot file path and metadata."
+      }
+    },
+    {
+      "name": "describe_dataset",
+      "display_name": "Describe Dataset",
+      "confusion_group": "schema_vs_metadata",
+      "description": "Returns a structural description of a dataset including column names, data types, sample values, and row/column counts. Analogous to a database schema inspection. Use this when the user wants to understand what columns and data types are available.",
+      "disambiguation_hint": "Use this tool when the user asks 'what columns does this have?', 'what does this table look like?', or 'describe this dataset'. Do not use when the user wants computed statistics about column values.",
+      "args": {
+        "dataset_name": {
+          "type": "string",
+          "description": "Name or identifier of the dataset to describe.",
+          "required": true
+        },
+        "include_sample_values": {
+          "type": "boolean",
+          "description": "Whether to include a few sample values per column.",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "object",
+        "description": "Schema object with column names, data types, nullable flags, and optional sample values."
+      }
+    },
+    {
+      "name": "get_column_statistics",
+      "display_name": "Get Column Statistics",
+      "confusion_group": "schema_vs_metadata",
+      "description": "Computes descriptive statistics for one or more columns in a dataset: min, max, mean, median, standard deviation, null count, unique value count, and value distribution. Use this when the user wants to understand the statistical properties of the data in specific columns.",
+      "disambiguation_hint": "Use this tool when the user asks about the range, distribution, nulls, or statistical summary of column values — e.g., 'what is the range of the revenue column?', 'how many nulls are there?'. Do not use for schema/structure questions.",
+      "args": {
+        "dataset_name": {
+          "type": "string",
+          "description": "Name of the dataset.",
+          "required": true
+        },
+        "columns": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "List of column names to compute statistics for. Computes for all columns if omitted.",
+          "required": false
+        },
+        "include_histogram": {
+          "type": "boolean",
+          "description": "Whether to include value distribution histogram data.",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "object",
+        "description": "Object mapping each column name to its descriptive statistics."
+      }
+    },
+    {
+      "name": "list_available_metrics",
+      "display_name": "List Available Metrics",
+      "confusion_group": "schema_vs_metadata",
+      "description": "Returns a catalog of all business metrics and KPIs available in the data platform, including metric name, definition, owner, and the underlying dataset and column it is computed from. Use this when the user wants to discover what metrics or KPIs exist — not the raw column structure.",
+      "disambiguation_hint": "Use this tool when the user asks 'what metrics do we track?', 'what KPIs are available?', or 'what can I measure?'. The user is asking about business-level metrics, not raw database columns.",
+      "args": {
+        "domain_filter": {
+          "type": "string",
+          "description": "Optional domain or category to filter metrics by (e.g., 'sales', 'marketing', 'product').",
+          "required": false
+        },
+        "include_definitions": {
+          "type": "boolean",
+          "description": "Whether to include full metric definitions and computation logic.",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "array",
+        "description": "Array of metric catalog objects with name, definition, owner, and source details."
+      }
+    },
+    {
+      "name": "compute_correlation",
+      "display_name": "Compute Correlation",
+      "confusion_group": "correlation_vs_causation",
+      "description": "Computes the pairwise correlation coefficient (Pearson, Spearman, or Kendall) between two or more numeric columns. Returns correlation values between -1 and 1 and a correlation matrix for multiple columns. Use this when the user wants to measure the linear or monotonic relationship between variables without modeling causation.",
+      "disambiguation_hint": "Use this tool when the user asks 'are X and Y correlated?', 'does X move with Y?', or 'what is the relationship strength between X and Y?'. Do not use when the user wants to model Y as a function of X (use regression) or detect unusual values.",
+      "args": {
+        "columns": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Two or more numeric columns to correlate.",
+          "required": true
+        },
+        "method": {
+          "type": "string",
+          "enum": ["pearson", "spearman", "kendall"],
+          "description": "Correlation method to use.",
+          "required": true
+        },
+        "date_column": {
+          "type": "string",
+          "description": "Optional date column to restrict the correlation to a time window.",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "object",
+        "description": "Correlation matrix object with pairwise correlation values and p-values."
+      }
+    },
+    {
+      "name": "run_regression_analysis",
+      "display_name": "Run Regression Analysis",
+      "confusion_group": "correlation_vs_causation",
+      "description": "Fits a regression model (linear or logistic) to predict a target variable from one or more predictor variables. Returns model coefficients, R-squared, p-values, and residuals. Use this when the user wants to model how one variable causally influences another or wants predictive coefficients.",
+      "disambiguation_hint": "Use this tool when the user asks 'how much does X affect Y?', 'what is the impact of X on Y?', or 'predict Y from X'. The user wants a predictive model or causal coefficient, not just a correlation score.",
+      "args": {
+        "target_column": {
+          "type": "string",
+          "description": "The dependent variable (Y) to be predicted.",
+          "required": true
+        },
+        "predictor_columns": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "One or more independent variables (X) to predict from.",
+          "required": true
+        },
+        "regression_type": {
+          "type": "string",
+          "enum": ["linear", "logistic", "ridge", "lasso"],
+          "description": "Type of regression model to fit.",
+          "required": true
+        },
+        "date_column": {
+          "type": "string",
+          "description": "Optional date column for time-scoped regression.",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "object",
+        "description": "Regression results with coefficients, R-squared, p-values, and residual array."
+      }
+    },
+    {
+      "name": "detect_anomaly",
+      "display_name": "Detect Anomaly",
+      "confusion_group": "correlation_vs_causation",
+      "description": "Detects statistical anomalies or outliers in a time series or numeric column using methods such as Z-score, IQR, or isolation forest. Returns flagged data points with anomaly scores. Use this when the user wants to identify unusual, unexpected, or suspicious values in the data.",
+      "disambiguation_hint": "Use this tool when the user asks 'are there any anomalies?', 'what looks unusual?', 'flag outliers', or 'why did X spike?'. The user wants to find unexpected values, not model relationships between variables.",
+      "args": {
+        "metric_column": {
+          "type": "string",
+          "description": "Numeric column to detect anomalies in.",
+          "required": true
+        },
+        "date_column": {
+          "type": "string",
+          "description": "Optional date column for time-ordered anomaly detection.",
+          "required": false
+        },
+        "detection_method": {
+          "type": "string",
+          "enum": ["zscore", "iqr", "isolation_forest", "mad"],
+          "description": "Statistical method to use for anomaly detection.",
+          "required": true
+        },
+        "sensitivity": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "Sensitivity level controlling the anomaly threshold.",
+          "required": false
+        }
+      },
+      "returns": {
+        "type": "object",
+        "description": "Object with flagged anomaly rows, anomaly scores, and detection threshold used."
+      }
+    }
+  ]
+}
