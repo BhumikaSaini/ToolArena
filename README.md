@@ -1,4 +1,6 @@
-# ToolArena 🛠️
+# Tool Arena
+
+> Check out a quick demo video [here](https://www.tiny.cc/toolarena-demo/)
 
 **A confusion-attack tool-calling benchmark for LLMs**
 
